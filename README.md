@@ -24,4 +24,4 @@ It features smooth slide animations, interactive login/sign-up modals, and a dyn
 
 ---
 
-Authors : Priyanhsri Priyadarshini Panda
+Authors : Priyanhsri Priyadarshini Panda & Plak Verma
