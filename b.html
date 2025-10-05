@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVENT HORIZON</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Teko', sans-serif;
+            background-color: #ff003c;
+            color: white;
+            overflow: hidden;
+        }
+        .slide-title-line {
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3); /* Improved contrast */
+        }
+        .slide { pointer-events: none; }
+        .slide.active { pointer-events: auto; }
+        .slide-title-mask { overflow: hidden; }
+        .slide-title-line {
+            transform: translateY(100%);
+            transition: transform 0.8s cubic-bezier(0.86, 0, 0.07, 1);
+            display: inline-block;
+        }
+        .slide.active .slide-title-line { transform: translateY(0); }
+        .slide.exiting .slide-title-line { transform: translateY(-100%); }
+        .slide-text-content {
+            transition: opacity 0.4s ease;
+            opacity: 1;
+        }
+        .slide.exiting .slide-text-content { opacity: 0; }
+        .slide-image-wrapper {
+            transition: transform 1s cubic-bezier(0.86, 0, 0.07, 1), clip-path 1s cubic-bezier(0.86, 0, 0.07, 1);
+            clip-path: inset(0 0 0 0);
+            transform: scale(1.1);
+            position: relative;
+        }
+        .slide-image-wrapper::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+        .slide.active .slide-image-wrapper {
+            transform: scale(1);
+            clip-path: inset(0 0 0 0);
+        }
+        .slide.exiting .slide-image-wrapper {
+             transform: scale(1.1);
+             clip-path: inset(0 100% 0 0);
+        }
+        .slide-image { transition: transform 5s ease-in-out; }
+        .slide.active .slide-image { transform: scale(1.1); }
+        .number-track { transition: transform 1s cubic-bezier(0.86, 0, 0.07, 1); }
+        .nav-arrow {
+            width: 50px;
+            height: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-arrow:hover {
+            background-color: white;
+            color: #ff003c;
+        }
+        #footer-form, .auth-modal {
+            background-color: #2a2a2a;
+            color: #e5e7eb;
+        }
+        .form-input {
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            color: #f3f4f6;
+            padding: 10px 0;
+            transition: border-color 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-bottom-color: #ffffff;
+        }
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Teko', sans-serif;
+            font-size: 1.25rem;
+        }
+        select.form-input:invalid { color: rgba(255, 255, 255, 0.5); }
+        select option {
+            background: #2a2a2a;
+            color: #e5e7eb;
+        }
+        .form-scroll-container::-webkit-scrollbar { width: 8px; }
+        .form-scroll-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
+        .form-scroll-container::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+
+        /* Auth Modal Styles */
+        .auth-overlay {
+            background-color: rgba(0,0,0,0.7);
+            transition: opacity 0.3s ease-in-out;
+        }
+        .auth-modal {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="relative w-full h-screen">
+
+    <header class="absolute top-0 left-0 w-full z-20 px-8 py-6 flex items-center justify-between">
+        <a href="#" class="text-4xl font-bold tracking-wider">EVENT HORIZON</a>
+        <nav class="hidden sm:flex items-center gap-6 text-xl tracking-wider">
+            <a href="#" id="login-btn" class="hover:opacity-75 transition-opacity">Login</a>
+            <a href="#" id="signup-btn" class="border border-white/50 px-5 py-2 hover:bg-white hover:text-[#ff003c] transition-colors duration-300">Sign Up</a>
+        </nav>
+        <div class="sm:hidden">
+             <button class="text-xl tracking-wider border border-white/50 px-4 py-1">Menu</button>
+        </div>
+    </header>
+
+    <main id="slider-container" class="relative w-full h-full"></main>
+    
+    <div class="absolute top-0 right-0 h-full w-1/3 md:w-1/4 flex items-center justify-center pointer-events-none z-0">
+        <div class="text-[35vw] md:text-[25vw] lg:text-[20vw] font-bold text-white opacity-20 overflow-hidden h-[25vw] md:h-[18vw] lg:h-[15vw]">
+            <div id="number-track" class="number-track"></div>
+        </div>
+    </div>
+    
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-8 z-20 flex items-center gap-4">
+        <div id="prev-btn" class="nav-arrow">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        </div>
+         <div id="next-btn" class="nav-arrow">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        </div>
+    </div>
+
+    <div class="absolute bottom-8 left-8 z-20">
+        <button id="register-btn" class="border border-white/50 px-6 py-3 text-lg tracking-wider hover:bg-white hover:text-[#ff003c] transition-colors duration-300">
+            VIEW ALL CASES
+        </button>
+    </div>
+
+    <div id="auth-overlay" class="auth-overlay fixed inset-0 z-40 flex items-center justify-center p-4 hidden opacity-0">
+        <div id="login-modal" class="auth-modal w-full max-w-md p-8 md:p-12 rounded-lg shadow-xl relative transform scale-95 opacity-0">
+            <button id="close-login-modal" class="absolute top-4 right-6 text-gray-400 text-4xl font-light hover:text-white">&times;</button>
+            <h2 class="text-6xl font-bold uppercase mb-8">Login</h2>
+            <form>
+                <input type="email" placeholder="EMAIL ADDRESS" class="form-input w-full text-xl mb-6" required>
+                <input type="password" placeholder="PASSWORD" class="form-input w-full text-xl mb-8" required>
+                <button type="submit" class="w-full bg-white text-[#2a2a2a] py-4 text-2xl tracking-wider hover:bg-gray-200 transition-colors duration-300">
+                    LOGIN &rarr;
+                </button>
+                <p class="text-center mt-6 text-lg">
+                    No account? <a href="#" id="switch-to-signup" class="font-bold underline hover:text-white">Sign Up</a>
+                </p>
+            </form>
+        </div>
+        <div id="signup-modal" class="auth-modal w-full max-w-md p-8 md:p-12 rounded-lg shadow-xl relative hidden transform scale-95 opacity-0">
+            <button id="close-signup-modal" class="absolute top-4 right-6 text-gray-400 text-4xl font-light hover:text-white">&times;</button>
+            <h2 class="text-6xl font-bold uppercase mb-8">Sign Up</h2>
+            <form>
+                <input type="text" placeholder="FULL NAME" class="form-input w-full text-xl mb-6" required>
+                <input type="email" placeholder="EMAIL ADDRESS" class="form-input w-full text-xl mb-6" required>
+                <input type="password" placeholder="CREATE PASSWORD" class="form-input w-full text-xl mb-8" required>
+                <button type="submit" class="w-full bg-white text-[#2a2a2a] py-4 text-2xl tracking-wider hover:bg-gray-200 transition-colors duration-300">
+                    CREATE ACCOUNT &rarr;
+                </button>
+                <p class="text-center mt-6 text-lg">
+                    Already have an account? <a href="#" id="switch-to-login" class="font-bold underline hover:text-white">Login</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+
+    <footer id="footer-form" class="absolute bottom-0 left-0 w-full h-full transform translate-y-full transition-transform duration-1000 ease-in-out z-30 form-scroll-container overflow-y-auto">
+        <div class="container mx-auto px-8 py-16 flex flex-col justify-center h-full">
+            <button id="close-form-btn" class="absolute top-8 right-8 text-gray-200 text-5xl font-light">&times;</button>
+            <h2 class="text-6xl md:text-8xl lg:text-9xl font-bold uppercase mb-8">Register Your Interest</h2>
+            <form id="concert-form" class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                <input type="text" placeholder="FIRST NAME" class="form-input w-full text-xl" required>
+                <input type="text" placeholder="LAST NAME" class="form-input w-full text-xl" required>
+                <input type="email" placeholder="EMAIL ADDRESS" class="form-input w-full text-xl md:col-span-2" required>
+                <label for="concert-select" class="sr-only">Concert of Interest</label>
+                <select id="concert-select" class="form-input w-full text-xl md:col-span-2" required>
+                    <option value="" disabled selected>SELECT CONCERT OF INTEREST</option>
+                    <option value="kickoff-2025">SWITCH - SOPRA STERIA KICK OFF 2025</option>
+                    <option value="grand-hotel">GRAND HOTEL OSLO 150 YEARS</option>
+                    <option value="nato-meeting">INFORMAL MEETING OF NATO</option>
+                </select>
+                <textarea placeholder="YOUR MESSAGE (OPTIONAL)" rows="3" class="form-input w-full text-xl md:col-span-2"></textarea>
+                <div class="md:col-span-2 flex justify-start">
+                     <button type="submit" class="border border-white/50 text-white px-8 py-4 text-2xl tracking-wider hover:bg-white hover:text-[#2a2a2a] transition-colors duration-300 mt-4">
+                         REGISTER NOW &rarr;
+                    </button>
+                </div>
+            </form>
+             <div id="form-success-message" class="hidden mt-8 text-center">
+                <h3 class="text-4xl font-bold">Thank You!</h3>
+                <p class="text-xl">Your registration has been received. We'll be in touch soon.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slidesData = [
+                {
+                    title: ["SWITCH - SOPRA", "STERIA KICK OFF", "2025"],
+                    tags: ["NORWAY", "B2E EVENT"],
+                    img: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80"
+                },
+                {
+                    title: ["GRAND HOTEL", "OSLO 150 YEARS"],
+                    tags: ["INTERNATIONAL", "NORWAY", "BRAND ACTIVATION"],
+                    img: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80"
+                },
+                {
+                    title: ["INFORMAL MEETING OF", "NATO FOREIGN MINISTERS", "IN OSLO, NORWAY"],
+                    tags: ["OSLO", "B2B EVENT"],
+                    img: "https://images.unsplash.com/photo-1505236858219-8359eb29e329?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1562&q=80"
+                },
+            ];
+
+            const sliderContainer = document.getElementById('slider-container');
+            const numberTrack = document.getElementById('number-track');
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const registerBtn = document.getElementById('register-btn');
+            const footerForm = document.getElementById('footer-form');
+            const closeFormBtn = document.getElementById('close-form-btn');
+            const concertForm = document.getElementById('concert-form');
+            const formSuccessMessage = document.getElementById('form-success-message');
+
+            let currentIndex = 0;
+            let isAnimating = false;
+
+            function initSlider() {
+                slidesData.forEach((slide, index) => {
+                    const slideEl = document.createElement('div');
+                    slideEl.className = 'slide absolute w-full h-full';
+                    slideEl.style.zIndex = slidesData.length - index;
+                    
+                    const titleHTML = slide.title.map(line => `<div class="slide-title-mask"><span class="slide-title-line">${line}</span></div>`).join('');
+                    const tagsHTML = slide.tags.map(tag => `<span class="border border-white/50 px-3 py-1 text-sm">${tag}</span>`).join('');
+
+                    slideEl.innerHTML = `
+                        <div class="absolute inset-0 w-full h-full flex items-center justify-center">
+                            <div class="w-10/12 sm:w-6/12 md:w-5/12 lg:w-4/12 xl:w-3/12 aspect-[3/4] relative overflow-hidden">
+                                <div class="slide-image-wrapper absolute inset-0">
+                                     <img src="${slide.img}" class="slide-image w-full h-full object-cover" alt="${slide.title[0]}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slide-text-content absolute top-1/2 -translate-y-1/2 left-8 md:left-16 lg:left-24 w-1/2 md:w-auto text-white">
+                           <div class="text-5xl md:text-7xl lg:text-8xl font-semibold uppercase leading-none">
+                                ${titleHTML}
+                           </div>
+                           <div class="flex flex-wrap gap-2 mt-6">
+                                ${tagsHTML}
+                           </div>
+                        </div>
+                    `;
+                    sliderContainer.appendChild(slideEl);
+                    
+                    const numberEl = document.createElement('div');
+                    numberEl.className = 'w-full flex items-center justify-center';
+                    numberEl.style.height = '100%';
+                    numberEl.textContent = `0${index + 1}`;
+                    numberTrack.appendChild(numberEl);
+                });
+                sliderContainer.children[0].classList.add('active');
+            }
+
+            function goToSlide(newIndex) {
+                if (isAnimating) return;
+                isAnimating = true;
+                const currentSlide = sliderContainer.children[currentIndex];
+                const newSlide = sliderContainer.children[newIndex];
+                Array.from(sliderContainer.children).forEach(s => s.style.zIndex = 1);
+                currentSlide.style.zIndex = 3;
+                newSlide.style.zIndex = 2;
+                currentSlide.classList.add('exiting');
+                setTimeout(() => { newSlide.classList.add('active'); }, 100);
+                numberTrack.style.transform = `translateY(-${newIndex * 100}%)`;
+                setTimeout(() => {
+                    currentSlide.classList.remove('active', 'exiting');
+                    currentIndex = newIndex;
+                    isAnimating = false;
+                    Array.from(sliderContainer.children).forEach((s, i) => { s.style.zIndex = slidesData.length - i; });
+                }, 1000);
+            }
+            
+            function showNext() { goToSlide((currentIndex + 1) % slidesData.length); }
+            function showPrev() { goToSlide((currentIndex - 1 + slidesData.length) % slidesData.length); }
+
+            nextBtn.addEventListener('click', showNext);
+            prevBtn.addEventListener('click', showPrev);
+            window.addEventListener('wheel', (e) => {
+                if (!isAnimating) e.deltaY > 0 ? showNext() : showPrev();
+            });
+
+            let touchStartX = 0;
+            sliderContainer.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+            sliderContainer.addEventListener('touchend', (e) => {
+                if (isAnimating) return;
+                const touchEndX = e.changedTouches[0].screenX;
+                if (touchStartX - touchEndX > 50) showNext();
+                else if (touchEndX - touchStartX > 50) showPrev();
+            }, { passive: true });
+
+            // --- FORM LOGIC ---
+            function openForm() { footerForm.classList.remove('translate-y-full'); }
+            function closeForm() { footerForm.classList.add('translate-y-full'); }
+            registerBtn.addEventListener('click', openForm);
+            closeFormBtn.addEventListener('click', closeForm);
+            concertForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                concertForm.style.display = 'none';
+                formSuccessMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    closeForm();
+                    setTimeout(() => {
+                        concertForm.style.display = 'grid';
+                        formSuccessMessage.classList.add('hidden');
+                        concertForm.reset();
+                    }, 1000);
+                }, 3000);
+            });
+
+            // --- AUTH MODAL LOGIC ---
+            const authOverlay = document.getElementById('auth-overlay');
+            const loginBtn = document.getElementById('login-btn');
+            const signupBtn = document.getElementById('signup-btn');
+            const loginModal = document.getElementById('login-modal');
+            const signupModal = document.getElementById('signup-modal');
+
+            function openModal(modal) {
+                authOverlay.classList.remove('hidden');
+                setTimeout(() => {
+                    authOverlay.classList.remove('opacity-0');
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.classList.remove('scale-95', 'opacity-0');
+                    }, 50);
+                }, 10);
+            }
+
+            function closeModal() {
+                const modal = authOverlay.querySelector('.auth-modal:not(.hidden)');
+                if (modal) {
+                    modal.classList.add('scale-95', 'opacity-0');
+                }
+                authOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    authOverlay.classList.add('hidden');
+                    loginModal.classList.add('hidden');
+                    signupModal.classList.add('hidden');
+                }, 300);
+            }
+
+            loginBtn.addEventListener('click', (e) => { e.preventDefault(); openModal(loginModal); });
+            signupBtn.addEventListener('click', (e) => { e.preventDefault(); openModal(signupModal); });
+
+            document.getElementById('switch-to-signup').addEventListener('click', (e) => {
+                e.preventDefault();
+                loginModal.classList.add('hidden');
+                signupModal.classList.remove('hidden');
+            });
+
+            document.getElementById('switch-to-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                signupModal.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+            });
+
+            authOverlay.addEventListener('click', (e) => { if (e.target === authOverlay) closeModal(); });
+            document.getElementById('close-login-modal').addEventListener('click', closeModal);
+            document.getElementById('close-signup-modal').addEventListener('click', closeModal);
+
+            initSlider();
+        });
+    </script>
+</body>
+</html>
