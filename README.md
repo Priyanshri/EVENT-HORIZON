@@ -24,4 +24,4 @@ It features smooth slide animations, interactive login/sign-up modals, and a dyn
 
 ---
 
-## 📂 Project Structure
+Authors : Priyanhsri Priyadarshini Panda
