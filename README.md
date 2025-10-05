@@ -25,3 +25,6 @@ It features smooth slide animations, interactive login/sign-up modals, and a dyn
 ---
 
 Authors : Priyanhsri Priyadarshini Panda & Plak Verma
+
+AI tools used : Google Gemini 
+Other tools : Github , Netify , VS code 
